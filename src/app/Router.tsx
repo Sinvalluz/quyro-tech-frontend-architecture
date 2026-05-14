@@ -1,8 +1,8 @@
-import { QueryClient, useQueryClient } from '@tanstack/react-query';
+import { type QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { createBrowserRouter } from 'react-router';
 import { RouterProvider } from 'react-router/dom';
-import { paths } from '../config/paths';
+import { paths } from '@/config/paths';
 
 const convert = (queryClient: QueryClient) => (m: any) => {
 	const { clientLoader, clientAction, default: Component, ...rest } = m;
@@ -19,10 +19,17 @@ const createAppRouter = (queryClient: QueryClient) =>
 		{
 			path: paths.home.path,
 			lazy: () => import('./routes/Home').then(convert(queryClient)),
+			HydrateFallback: () => null,
+		},
+		{
+			path: paths.auth.register.path,
+			lazy: () => import('./routes/auth/Register').then(convert(queryClient)),
+			HydrateFallback: () => null,
 		},
 		{
 			path: '*',
 			lazy: () => import('./routes/NotFound').then(convert(queryClient)),
+			HydrateFallback: () => null,
 		},
 	]);
 
