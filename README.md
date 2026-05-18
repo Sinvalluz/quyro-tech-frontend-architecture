@@ -1,651 +1,858 @@
-# Quyro Tech - Frontend Architecture
-
-> Padrão oficial de arquitetura front-end da Quyro Tech. Uma documentação viva que descreve a estrutura, padrões e princípios de design de componentes e aplicações.
-
-![TypeScript](https://img.shields.io/badge/TypeScript-6.0.2-3178C6?logo=typescript)
-![React](https://img.shields.io/badge/React-19.2.6-61DAFB?logo=react)
-![Vite](https://img.shields.io/badge/Vite-8.0.12-646CFF?logo=vite)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-4.3.0-06B6D4?logo=tailwindcss)
-
----
-
-## Sumário
-
-- [Visão Geral](#visão-geral)
-- [Estrutura do Projeto](#estrutura-do-projeto)
-- [Arquivos de Configuração](#arquivos-de-configuração)
-- [Fluxo de Dados e Comunicação](#fluxo-de-dados-e-comunicação)
-- [Começando](#começando)
-- [Decisões Arquiteturais](#decisões-arquiteturais)
-- [Convenções e Padrões](#convenções-e-padrões)
-
----
+# Quyro Tech Frontend Architecture
 
 ## Visão Geral
 
-Este projeto define o **padrão oficial de arquitetura front-end** para todas as aplicações da Quyro Tech. É construído com **Vite**, **React 19**, **TypeScript**, **TailwindCSS** e outras tecnologias modernas.
+Este projeto representa a arquitetura front-end base da Quyro Tech para novos projetos React. Ele não deve ser lido apenas como uma aplicação comum, mas como um template arquitetural com separação clara entre inicialização da aplicação, rotas, providers globais, configuração, biblioteca compartilhada, componentes reutilizáveis e features de negócio.
 
-### Objetivos Principais
+A organização atual segue uma abordagem orientada a features: páginas ficam em `src/app/routes`, regras e fluxos de negócio ficam dentro de `src/features`, componentes visuais reutilizáveis ficam em `src/components`, integrações técnicas ficam em `src/lib` e configurações globais ficam em `src/config`.
 
-- ✅ **Consistência**: Estrutura padronizada em todos os projetos
-- ✅ **Escalabilidade**: Fácil crescimento e adição de features
-- ✅ **Manutenibilidade**: Código limpo e bem organizado
-- ✅ **Reutilização**: Componentes e utilitários compartilháveis
-- ✅ **Type-Safety**: TypeScript em todo o projeto
-- ✅ **Performance**: Otimizações built-in com Vite e React Query
+O objetivo é criar uma base previsível para que novos desenvolvedores consigam entender onde cada responsabilidade deve viver antes de começar a implementar uma funcionalidade.
 
----
+## Tecnologias Utilizadas
+
+- **Vite**: ferramenta de build e servidor de desenvolvimento. A configuração está em `vite.config.ts`.
+- **React**: biblioteca principal para construção da interface.
+- **TypeScript**: tipagem estática da aplicação. As regras principais estão em `tsconfig.app.json`, `tsconfig.node.json` e `tsconfig.json`.
+- **React Router**: roteamento client-side via `createBrowserRouter` e `RouterProvider`.
+- **TanStack Query**: gerenciamento de cache, queries e mutations assíncronas. A configuração base está em `src/lib/reactQuery.ts`.
+- **Axios**: cliente HTTP centralizado em `src/lib/axios.ts`.
+- **TailwindCSS v4**: estilização utilitária integrada ao Vite com `@tailwindcss/vite`.
+- **shadcn/ui + Radix UI**: base de componentes acessíveis e estilizados em `src/components/ui`.
+- **React Hook Form**: gerenciamento de formulários, usado no formulário de registro.
+- **Zod**: validação de schemas e inferência de tipos, usado no schema de registro e na validação de env.
+- **Biome**: formatação e lint. A configuração está em `biome.json`.
+- **Lucide React**: biblioteca de ícones configurada em `components.json`, embora não exista uso direto de ícones nos arquivos atuais.
+- **Inter Variable**: fonte global importada em `src/index.css` via `@fontsource-variable/inter`.
 
 ## Estrutura do Projeto
 
-```
-quyro-tech-frontend-architecture/
-├── public/                          # Arquivos estáticos
+```txt
+.
+├── public/
 ├── src/
-│   ├── app/                        # Orquestração da aplicação
-│   │   ├── index.tsx               # Entry point do React App
-│   │   ├── Router.tsx              # Configuração de rotas (React Router v7)
-│   │   └── routes/                 # Páginas/Rotas da aplicação
-│   │       ├── Home.tsx
-│   │       ├── NotFound.tsx
-│   │       └── auth/
-│   │           └── Register.tsx
-│   ├── components/                 # Componentes genéricos
-│   │   └── ui/                     # Primitivos de UI (Shadcn style)
-│   ├── config/                     # Configurações globais
-│   │   ├── env.ts                  # Variáveis de ambiente
-│   │   └── paths.ts                # Definição de rotas centralizada
-│   ├── features/                   # Funcionalidades por domínio
+│   ├── app/
+│   │   ├── routes/
+│   │   │   ├── auth/
+│   │   │   │   └── Register.tsx
+│   │   │   ├── Home.tsx
+│   │   │   └── NotFound.tsx
+│   │   ├── index.tsx
+│   │   └── Router.tsx
+│   ├── components/
+│   │   └── ui/
+│   ├── config/
+│   │   ├── env.ts
+│   │   └── paths.ts
+│   ├── features/
 │   │   └── auth/
-│   │       ├── api/                # Chamadas de API (serviços)
-│   │       ├── components/         # Componentes locais da feature
-│   │       ├── schemas/            # Validações Zod
-│   │       └── types/              # Tipos específicos da feature
-│   ├── lib/                        # Instâncias de bibliotecas e utils
-│   │   ├── axios.ts                # Configuração do cliente HTTP
-│   │   ├── reactQuery.ts           # Configuração do TanStack Query
-│   │   └── utils.ts                # Helpers (ex: cn)
-│   ├── providers/                  # Provedores de contexto globais
-│   │   ├── AppProviders.tsx        # Wrapper de todos os provedores
-│   │   └── QueryProvider.tsx       # Configuração do React Query Provider
-│   ├── types/                      # Tipos globais e de domínio
+│   │       ├── components/
+│   │       ├── schemas/
+│   │       ├── services/
+│   │       └── types/
+│   ├── lib/
+│   │   ├── axios.ts
+│   │   ├── reactQuery.ts
+│   │   └── utils.ts
+│   ├── providers/
+│   │   ├── AppProviders.tsx
+│   │   └── QueryProvider.tsx
+│   ├── types/
 │   │   └── user.ts
-│   ├── main.tsx                    # Mount point do React
-│   └── index.css                   # Estilos globais
-├── biome.json                      # Linter/Formatter
-├── package.json                    # Scripts e dependências
-└── vite.config.ts                  # Configuração do build tool
+│   ├── index.css
+│   └── main.tsx
+├── .env.example
+├── biome.json
+├── components.json
+├── index.html
+├── package.json
+├── tsconfig.app.json
+├── tsconfig.json
+├── tsconfig.node.json
+└── vite.config.ts
 ```
 
-### Descrição Detalhada das Pastas
+## Explicação das Pastas
 
-#### `src/app/`
-**Responsabilidade**: Gerenciar o ciclo de vida e roteamento da aplicação.
-- `index.tsx`: Monta a aplicação envolvendo o `AppProviders` e o `Router`.
-- `Router.tsx`: Define a hierarquia de rotas usando React Router v7 com suporte a `lazy loading`.
+### `src/app`
 
-#### `src/providers/`
-**Responsabilidade**: Centralizar todos os contextos globais.
-- `AppProviders.tsx`: Componente "mestre" que encapsula a aplicação com todos os providers necessários (Query, Auth, Theme, etc).
-- `QueryProvider.tsx`: Configura o `QueryClient` do TanStack Query.
+**Responsabilidade:**  
+Camada de aplicação. Centraliza a composição inicial do app e o roteamento.
 
-#### `src/features/`
-**Responsabilidade**: Agrupar lógica por domínio de negócio. Cada feature é um ecossistema independente.
-- `api/`: Centraliza as chamadas de backend usando a instância do `axios`.
-- `components/`: Componentes que só fazem sentido dentro desta feature.
-- `schemas/`: Definições de contrato e validação usando `Zod`.
-- `types/`: Tipos específicos da feature.
+**O que vive aqui:**  
+Arquivo de entrada da aplicação React (`index.tsx`), configuração do router (`Router.tsx`) e páginas de rota em `routes`.
 
-#### `src/lib/`
-**Responsabilidade**: Configuração de bibliotecas externas e utilitários transversais.
-- `axios.ts`: Instância configurada com `baseURL`, interceptors e headers padrão.
-- `reactQuery.ts`: Configuração do `QueryClient` do TanStack Query.
-- `utils.ts`: Funções como `cn` (Tailwind Merge + Clsx).
+**O que não deve viver aqui:**  
+Regras de negócio, chamadas HTTP diretas, schemas de validação, tipos específicos de domínio ou componentes internos de uma feature.
 
-#### `src/config/`
-**Responsabilidade**: Constantes e configurações de ambiente.
-- `env.ts`: Valida e exporta variáveis de ambiente de forma tipada.
-- `paths.ts`: Enumera todas as rotas da aplicação para evitar strings mágicas.
+**Exemplo real:**  
+`src/app/index.tsx` envolve o roteador com `AppProviders`.
 
-#### `src/components/ui/`
-**Responsabilidade**: Componentes genéricos de UI (Button, Input, Card, etc.).
-- Sem dependências de features específicas.
-- Props genéricas e reutilizáveis.
-- Estilizados com TailwindCSS e `class-variance-authority`.
-
-#### `src/types/`
-**Responsabilidade**: Tipos globais e de domínio.
-- Tipos como `User`, `Role`, etc.
-- Compartilhados entre features.
-- Tipos específicos de features ficam em `features/*/types/`.
-
-## Arquivos de Configuração
-
-| Arquivo | Propósito |
-|---------|-----------|
-| `package.json` | Scripts e dependências do projeto |
-| `vite.config.ts` | Configuração do Vite com suporte a React, Tailwind e alias `@/src` |
-| `tsconfig.json` / `tsconfig.app.json` | TypeScript com `target: es2023`, `jsx: react-jsx`, `noUnusedLocals` ativado |
-| `biome.json` | Linter/Formatter: tabs, 120 chars, CRLF |
-| `components.json` | Metadados para Shadcn UI |
-
-### Variáveis de Ambiente
-
-Definir em `.env.local`:
-```env
-VITE_API_URL=http://localhost:3000/api
-```
-
-Acessar via `src/config/env.ts`:
-```typescript
-export const env = {
-  API_URL: import.meta.env.VITE_API_URL,
-  IS_DEV: import.meta.env.DEV,
-  IS_PROD: import.meta.env.PROD,
+```tsx
+export const App = () => {
+	return (
+		<AppProviders>
+			<AppRouter />
+		</AppProviders>
+	);
 };
 ```
 
-## Fluxo de Dados e Comunicação
+**Regra de uso:**  
+Use `src/app` para configurar como a aplicação nasce e como as rotas são registradas. A lógica específica de cada domínio deve ser delegada para `src/features`.
 
-1. **Route** (`src/app/routes/auth/Register.tsx`) → Renderiza a página.
-2. **Feature Component** (`src/features/auth/components/RegisterForm.tsx`) → Composição do formulário.
-3. **Validation** (`src/features/auth/schemas/register.schema.ts`) → Define o contrato.
-4. **API Call** (`src/features/auth/api/register.ts`) → Usa `axios` com TanStack Query.
-5. **Global State** (via `AppProviders` em `src/providers/AppProviders.tsx`) → Gerencia estado cacheado.
+### `src/app/routes`
 
-### Fluxo Prático
+**Responsabilidade:**  
+Representar as páginas acessadas pelo React Router.
 
-```typescript
-// 1. Define o schema
-// features/auth/schemas/register.schema.ts
-export const RegisterSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
-  password: z.string().min(8),
-});
+**O que vive aqui:**  
+Componentes de rota, como `Home.tsx`, `NotFound.tsx` e `auth/Register.tsx`.
 
-// 2. Cria o componente de formulário
-// features/auth/components/RegisterForm.tsx
-import { RegisterSchema } from '../schemas/register.schema';
+**O que não deve viver aqui:**  
+Implementações completas de regras de negócio. A rota deve montar a tela e chamar componentes de feature quando necessário.
 
-export default function RegisterForm() {
-  const { register, handleSubmit } = useForm({
-    resolver: zodResolver(RegisterSchema),
-  });
-  // ...
-}
+**Exemplo real:**  
+`src/app/routes/auth/Register.tsx` importa o formulário da feature de autenticação.
 
-// 3. Faz a chamada de API
-// features/auth/api/register.ts
-export const useRegister = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (data: RegisterFormData) =>
-      axios.post('/auth/register', data).then(res => res.data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['auth'] }),
-  });
-};
-
-// 4. Usa no componente de página
-// app/routes/auth/Register.tsx
-import RegisterForm from '@/features/auth/components/RegisterForm';
-export default function RegisterPage() {
-  return <RegisterForm />;
-}
-```
-
----
-   - Usa `react-hook-form` com resolver `zodResolver`
-   - Define schema de validação em `register.schema.ts`
----
-
-## Começando
-
-### Pré-requisitos
-
-- Node.js 18+ (recomendado 20+)
-- npm, yarn ou pnpm
-
-### Instalação
-
-```bash
-# Clone o repositório
-git clone <repository-url>
-cd quyro-tech-frontend-architecture
-
-# Instale dependências
-npm install
-```
-
-### Desenvolvimento
-
-```bash
-# Inicie o dev server (hot reload automático)
-npm run dev
-```
-
-Acesse a aplicação em `http://localhost:5173`
-
-### Build para Produção
-
-```bash
-# Compila TypeScript e faz build com Vite
-npm run build
-
-# Visualiza build antes de deployar
-npm run preview
-```
-
-### Formatação de Código
-
-```bash
-# Formata todo código em src/
-npm run biome
-```
-
----
-
-## Decisões Arquiteturais
-
-### 1. **Organização por Features**
-**Decisão**: Usar pasta `features/` para agrupar código relacionado por domínio
-
-**Justificativa**:
-- Escalabilidade: Fácil adicionar novas features sem impactar estrutura
-- Modularidade: Features são independentes e podem ser movidas/removidas
-- Colaboração: Times podem trabalhar em features separadas sem conflito
-
-**Exemplo**:
-```
-features/auth/     # Toda lógica de autenticação junto
-features/dashboard/ # Toda lógica de dashboard junto
-features/payments/  # Toda lógica de pagamentos junto
-```
-
----
-
-### 2. **Componentes de UI Separados**
-**Decisão**: Manter componentes primitivos em `components/ui/` separado de features
-
-**Justificativa**:
-- Reutilização: Button, Input, Card podem ser usados em múltiplas features
-- Manutenção: Mudanças em componentes base afetam tudo (bom para consistência)
-- Biblioteca: Fácil exportar como design system
-
----
-
-### 3. **Alias Path `@/`**
-**Decisão**: Usar alias `@` para imports em vez de paths relativos
-
-**Não fazer**:
-```typescript
-import { Button } from '../../../components/ui/button';
-```
-
-**Fazer**:
-```typescript
-import { Button } from '@/components/ui/button';
-```
-
-**Justificativa**:
-- Readabilidade: Claro onde o arquivo está
-- Refatoração: Mover arquivo não quebra imports
-- Consistência: Sempre mesmo padrão
-
----
-
-### 4. **Validação com Zod + React Hook Form**
-**Decisão**: Usar Zod para schemas + React Hook Form para estado
-
-**Justificativa**:
-- Type-safety: `z.infer<typeof Schema>` gera tipos automaticamente
-- Validação centralizada: Schema é única fonte de verdade
-- UX: Validação em tempo real com erro específico
-
----
-
-### 5. **React Query para Estado Async**
-**Decisão**: Usar `@tanstack/react-query` para gerenciar fetches de API
-
-**Benefícios**:
-- Caching automático
-- Refetch on focus
-- Retry automático
-- DevTools para debug
-
-**Configuração centralizada** em `lib/reactQuery.ts`:
-```typescript
-export const queryConfig = {
-  queries: {
-    refetchOnWindowFocus: false,
-    retry: false,
-    staleTime: 1000 * 60, // 1 minuto
-  },
-};
-```
-
----
-
-### 6. **TypeScript Strict Mode**
-**Decisão**: Forçar `noUnusedLocals`, `noUnusedParameters`, type safety máxima
-
-**Benefícios**:
-- Evita código morto
-- Força tipos explícitos
-- Menos bugs em runtime
-
----
-
-### 7. **Tailwind + CVA para Styling**
-**Decisão**: Usar TailwindCSS com `class-variance-authority` para variantes
-
-**Exemplo**:
-```typescript
-const buttonVariants = cva(
-  "base-styles",
-  {
-    variants: {
-      variant: {
-        default: "bg-primary text-white",
-        outline: "bg-white border",
-      },
-      size: {
-        sm: "px-2 py-1",
-        lg: "px-4 py-2",
-      },
-    },
-  }
-);
-```
-
-**Benefícios**:
-- Type-safe component props
-- Sem duplication de estilos
-- Fácil manutenção
-
----
-
-### 8. **Roteamento com React Router v7**
-**Decisão**: Usar React Router v7 com lazy loading de componentes
-
-**Beneficios**:
-- Code splitting automático
-- Carregamento sob-demanda de routes
-- Integração com React Query via loaders
-
-```typescript
-{
-  path: '/auth/register',
-  lazy: () => import('./routes/auth/Register').then(convert(queryClient)),
-}
-```
-
----
-
-## Convenções e Padrões
-
-### Nomenclatura de Pastas
-
-| Pasta | Convenção | Exemplo |
-|-------|-----------|---------|
-| Features | `lowercase` | `auth`, `dashboard`, `payments` |
-| Componentes | `CamelCase` | `RegisterForm.tsx`, `UserCard.tsx` |
-| Tipos | `camelCase` (tipos) ou `PascalCase` (interfaces) | `auth.types.ts`, `user.ts` |
-| Schemas | `camelCase` + `.schema.ts` | `register.schema.ts`, `login.schema.ts` |
-| Utilitários | `camelCase` + `.ts` | `utils.ts`, `helpers.ts` |
-
----
-
-### Nomenclatura de Arquivos
-
-**Componentes React**: `PascalCase.tsx`
-```typescript
-RegisterForm.tsx     ✅
-register-form.tsx    ❌
-registerForm.tsx     ❌
-```
-
-**Tipos TypeScript**: `camelCase.ts`
-```typescript
-auth.types.ts        ✅
-Auth.types.ts        ❌
-authTypes.ts         ❌
-```
-
-**Schemas**: `featureName.schema.ts`
-```typescript
-register.schema.ts   ✅
-RegisterSchema.ts    ❌
-registerSchema.ts    ❌
-```
-
----
-
-### Estrutura de Componentes React
-
-```typescript
-import { ReactNode } from 'react';
-import { cn } from '@/lib/utils';
-
-// Props
-interface ButtonProps extends React.ComponentProps<'button'> {
-  variant?: 'primary' | 'secondary';
-  size?: 'sm' | 'lg';
-  children: ReactNode;
-}
-
-// Componente
-export function Button({ 
-  variant = 'primary', 
-  size = 'sm', 
-  className,
-  children,
-  ...props 
-}: ButtonProps) {
-  return (
-    <button
-      className={cn(buttonVariants({ variant, size }), className)}
-      {...props}
-    >
-      {children}
-    </button>
-  );
-}
-```
-
-**Padrões**:
-- Props interfaces explícitas
-- Default values para variantes
-- Spread `...props` para flexibilidade
-- `cn()` para merge de classes
-
----
-
-### Estrutura de Features
-
-```typescript
-// features/auth/types/auth.types.ts
-export type RegisterResponse = {
-  user: User;
-  token: string;
-};
-
-// features/auth/schemas/register.schema.ts
-import { z } from 'zod';
-
-export const RegisterSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
-  password: z.string().min(8),
-});
-
-export type RegisterFormData = z.infer<typeof RegisterSchema>;
-
-// features/auth/components/RegisterForm.tsx
-import { RegisterSchema, type RegisterFormData } from '../schemas/register.schema';
-import { Button } from '@/components/ui/button';
-
-export default function RegisterForm() {
-  // Componente aqui
-}
-```
-
-**Padrões**:
-- Tipos em `types/`
-- Schemas em `schemas/`
-- Componentes em `components/`
-- Imports internos da feature via paths relativos
-- Imports externos via alias `@/`
-
----
-
-### Estrutura de Rotas
-
-```typescript
-// src/app/routes/auth/Register.tsx
+```tsx
 import RegisterForm from '@/features/auth/components/RegisterForm';
 
 export default function RegisterRoute() {
-  return (
-    <div className="container mx-auto py-8">
-      <h1>Criar Conta</h1>
-      <RegisterForm />
-    </div>
-  );
-}
-
-// Opcional: Loaders/Actions para React Router
-export async function clientLoader({ queryClient }) {
-  // Pre-fetch data antes de renderizar
-  return queryClient.ensureQueryData({
-    queryKey: ['auth', 'register-info'],
-    queryFn: () => fetch('/api/auth/register-info'),
-  });
+	return (
+		<div className='mt-52 flex flex-col items-center font-semibold'>
+			<h1>Register Route - Quyro Tech</h1>
+			<RegisterForm />
+		</div>
+	);
 }
 ```
 
----
+**Regra de uso:**  
+Uma rota deve ser fina: organiza layout, conecta a URL a uma feature e evita concentrar validação, mutation ou chamada HTTP.
 
-## 📊 Hierarquia de Camadas
+### `src/components`
 
-```mermaid
-graph TD
-    A["🖥️ Routes/Pages<br/>app/routes/"]
-    B["🎨 Feature Components<br/>features/*/components/"]
-    C["🧩 UI Components<br/>components/ui/"]
-    D["📚 Lib & Utils<br/>lib/ + config/"]
-    E["🏷️ Types & Schemas<br/>types/ + features/*/types/"]
+**Responsabilidade:**  
+Armazenar componentes globais reutilizáveis e sem dependência de domínio.
 
-    A -->|compõe| B
-    A -->|usa| C
-    A -->|usa| D
-    A -->|importa| E
-    
-    B -->|compõe| C
-    B -->|usa| D
-    B -->|importa| E
-    
-    C -->|usa| D
-    C -->|sem dependências| B
-    
-    D -->|sem dependências em camadas acima| .
-    E -->|tipos puros| .
+**O que vive aqui:**  
+Atualmente existe a pasta `ui`, que contém componentes base de interface.
 
-    style A fill:#FF6B6B
-    style B fill:#4ECDC4
-    style C fill:#95E1D3
-    style D fill:#FFE66D
-    style E fill:#A8DADC
+**O que não deve viver aqui:**  
+Componentes que sabem sobre autenticação, cadastro, usuário ou qualquer regra de negócio específica.
+
+**Exemplo real:**  
+`src/components/ui/button.tsx` exporta o componente global `Button`.
+
+**Regra de uso:**  
+Se o componente pode ser usado em qualquer feature sem conhecer o domínio, ele pode viver aqui. Se ele pertence a uma funcionalidade específica, coloque em `src/features/[feature]/components`.
+
+### `src/components/ui`
+
+**Responsabilidade:**  
+Design system local da aplicação, baseado em shadcn/ui, Radix UI, TailwindCSS e `class-variance-authority`.
+
+**O que vive aqui:**  
+Componentes visuais primitivos como `button.tsx`, `card.tsx`, `field.tsx`, `input.tsx`, `label.tsx` e `separator.tsx`.
+
+**O que não deve viver aqui:**  
+Estado de negócio, mutations, queries, chamadas HTTP, acesso a `localStorage` ou validações de domínio.
+
+**Exemplo real:**  
+`Button` define variantes visuais com `cva`.
+
+```tsx
+const buttonVariants = cva(
+	"group/button inline-flex shrink-0 items-center justify-center rounded-md ...",
+	{
+		variants: {
+			variant: {
+				default: 'bg-primary text-primary-foreground hover:bg-primary/80',
+				outline: 'border-border bg-background shadow-xs hover:bg-muted ...',
+			},
+		},
+	},
+);
 ```
 
-**Regras de Dependência**:
-1. ✅ Routes podem usar features, componentes e libs
-2. ✅ Features podem usar UI components e libs
-3. ✅ UI components são puros e sem dependências
-4. ❌ UI components NÃO podem importar de features
-5. ❌ Libs NÃO dependem de componentes ou features
+**Regra de uso:**  
+Componentes de `ui` devem ser genéricos, composáveis e controlados por props. Eles não devem importar arquivos de `features`.
 
----
+### `src/config`
 
-## 🔗 Fluxo de Requisições (Futuro com Backend)
+**Responsabilidade:**  
+Centralizar configurações globais da aplicação.
 
-```mermaid
-graph LR
-    A["Register Form<br/>features/auth/components/"]
-    B["React Hook Form<br/>+ Zod Validation"]
-    C["useRegister Hook<br/>features/auth/hooks/"]
-    D["API Client<br/>services/api/"]
-    E["React Query<br/>useRegisterMutation"]
-    F["Backend API<br/>POST /auth/register"]
+**O que vive aqui:**  
+Definições de paths e validação/leitura de variáveis de ambiente.
 
-    A -->|onSubmit| B
-    B -->|validated data| C
-    C -->|fetch| D
-    D -->|createQuery| E
-    E -->|http| F
-    F -->|success| E
-    E -->|update cache| C
-    C -->|notify| A
+**O que não deve viver aqui:**  
+Funções de chamada HTTP, componentes React, schemas de formulário ou lógica específica de uma feature.
 
-    style A fill:#FF6B6B
-    style F fill:#95E1D3
+**Exemplo real:**  
+`src/config/paths.ts` concentra as URLs usadas no router e em links.
+
+```ts
+export const paths = {
+	home: {
+		path: '/',
+		getHref: () => '/',
+	},
+	auth: {
+		register: {
+			path: '/auth/register',
+			getHref: (redirectTo?: string | null | undefined) =>
+				`/auth/register${redirectTo ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ''}`,
+		},
+	},
+} as const;
 ```
 
----
+**Regra de uso:**  
+Rotas e URLs internas devem ser adicionadas em `paths.ts` antes de serem usadas nas telas.
 
-## 📖 Próximos Passos
+### `src/features`
 
-### Para Adicionar uma Nova Feature
+**Responsabilidade:**  
+Organizar as funcionalidades de negócio por domínio.
 
-1. **Crie a estrutura**:
-   ```bash
-   src/features/novaFeature/
-   ├── components/
-   ├── schemas/
-   ├── services/    (chamadas de API)
-   ├── hooks/       (React hooks customizados)
-   └── types/
-   ```
+**O que vive aqui:**  
+Pastas de feature. No estado atual do projeto existe `auth`, responsável pelo fluxo de registro/autenticação inicial.
 
-2. **Defina tipos** em `types/novaFeature.types.ts`
+**O que não deve viver aqui:**  
+Componentes visuais totalmente genéricos, configuração global da aplicação ou inicialização de providers globais.
 
-3. **Crie schemas Zod** em `schemas/`
+**Exemplo real:**  
+`src/features/auth` contém `components`, `schemas`, `services` e `types`.
 
-4. **Implemente componentes** em `components/`
+**Regra de uso:**  
+Toda nova funcionalidade de negócio deve nascer como uma pasta dentro de `src/features`.
 
-5. **Crie rotas** em `src/app/routes/`
+### `src/features/auth`
 
-6. **Registre rotas** em `src/app/Router.tsx`
+**Responsabilidade:**  
+Concentrar a lógica de autenticação presente no projeto.
 
-### Para Adicionar um Novo Componente UI
+**O que vive aqui:**  
+Formulário de registro, schema de validação do registro, serviço HTTP de registro e tipos da resposta de autenticação.
 
-1. Crie em `src/components/ui/nomeComponente.tsx`
-2. Exporte de forma clara com props tipadas
-3. Use `class-variance-authority` para variantes
-4. Documente props com comentários
-5. Use em múltiplas features para validar reutilização
+**O que não deve viver aqui:**  
+Componentes globais de UI, configurações globais do router ou tipos globais que servem para toda a aplicação.
 
----
+**Exemplo real:**  
+`src/features/auth/services/register.ts` envia os dados para `/auth/register` e salva o token retornado no `localStorage`.
 
-## 🤝 Contribuindo
+```ts
+export async function registerUser(data: RegisterFormData): Promise<RegisterResponse> {
+	const response = await api.post<RegisterResponse>('/auth/register', data);
 
-### Checklist de Review
+	localStorage.setItem('token', response.data.token);
 
-- [ ] Código segue convenções de nomenclatura
-- [ ] Types estão corretos (sem `any`)
-- [ ] Componentes são puros e reutilizáveis
-- [ ] Imports usam alias `@/`
-- [ ] Código foi formatado com `npm run biome`
-- [ ] Linter não teve erros
+	return response.data;
+}
+```
 
----
+**Regra de uso:**  
+Tudo que pertence ao domínio de autenticação deve ficar nesta feature. Caso surjam login, logout, recuperação de senha ou busca do usuário logado, eles devem ser adicionados aqui ou em subpastas equivalentes.
 
-## 📞 Suporte
+### `src/features/auth/components`
 
-Para dúvidas sobre arquitetura ou padrões, consulte esta documentação ou entre em contato com o time de arquitetura.
+**Responsabilidade:**  
+Componentes React específicos da feature de autenticação.
 
----
+**O que vive aqui:**  
+Componentes que sabem sobre campos, fluxo e comportamento de auth.
 
-**Última atualização**: Maio 2026  
-**Versão**: 1.0.0  
-**Status**: Produção ✅
+**O que não deve viver aqui:**  
+Componentes de UI genéricos que poderiam ser usados por qualquer domínio.
+
+**Exemplo real:**  
+`RegisterForm.tsx` usa `react-hook-form`, `zodResolver`, `useMutation`, componentes de UI e o service `registerUser`.
+
+**Regra de uso:**  
+Componentes desta pasta podem orquestrar schemas, services e componentes globais, mas devem continuar pertencendo apenas ao domínio de autenticação.
+
+### `src/features/auth/schemas`
+
+**Responsabilidade:**  
+Definir schemas de validação e tipos inferidos a partir desses schemas.
+
+**O que vive aqui:**  
+Schemas Zod usados pelos formulários e fluxos da feature.
+
+**O que não deve viver aqui:**  
+Tipos de resposta da API que não dependem de validação de formulário, chamadas HTTP ou componentes React.
+
+**Exemplo real:**  
+`register.schema.ts` define `RegisterSchema` e infere `RegisterFormData`.
+
+```ts
+export const RegisterSchema = z.object({
+	name: z.string().min(2, 'Digite um nome válido'),
+	email: z.email('Digite um email válido'),
+	password: z.string().min(8, 'A senha deve ter no mínimo 8 caracteres'),
+});
+
+export type RegisterFormData = z.infer<typeof RegisterSchema>;
+```
+
+**Regra de uso:**  
+Quando um formulário precisa de validação, crie um schema na feature e derive o tipo com `z.infer`.
+
+### `src/features/auth/services`
+
+**Responsabilidade:**  
+Encapsular chamadas HTTP da feature.
+
+**O que vive aqui:**  
+Funções assíncronas que conversam com a API usando o client central `api`.
+
+**O que não deve viver aqui:**  
+Componentes React, JSX, estilos ou regras de apresentação.
+
+**Exemplo real:**  
+`register.ts` expõe `registerUser`.
+
+**Regra de uso:**  
+Services devem receber dados tipados, chamar endpoints e retornar dados tipados. O componente ou hook decide como usar loading, erro, sucesso e cache.
+
+### `src/features/auth/types`
+
+**Responsabilidade:**  
+Tipos específicos da feature de autenticação.
+
+**O que vive aqui:**  
+Tipos como `RegisterResponse`, que representa a resposta do endpoint de registro.
+
+**O que não deve viver aqui:**  
+Schemas Zod ou tipos globais compartilhados por toda a aplicação.
+
+**Exemplo real:**  
+`auth.types.ts` compõe a resposta de registro com o tipo global `User`.
+
+```ts
+import type { User } from '@/types/user';
+
+export type RegisterResponse = {
+	user: User;
+	token: string;
+};
+```
+
+**Regra de uso:**  
+Tipos que pertencem apenas ao domínio de auth ficam aqui. Tipos compartilhados por vários domínios devem ir para `src/types`.
+
+### `src/lib`
+
+**Responsabilidade:**  
+Centralizar integrações técnicas e helpers compartilhados.
+
+**O que vive aqui:**  
+Cliente Axios, configuração do TanStack Query e função utilitária para classes CSS.
+
+**O que não deve viver aqui:**  
+Componentes React de domínio, páginas, schemas de formulário ou services específicos de feature.
+
+**Exemplo real:**  
+`src/lib/axios.ts` configura `baseURL`, header JSON e interceptors.
+
+**Regra de uso:**  
+Bibliotecas externas com configuração própria devem ser encapsuladas aqui antes de serem usadas pelas features.
+
+### `src/providers`
+
+**Responsabilidade:**  
+Agrupar providers globais da aplicação.
+
+**O que vive aqui:**  
+`AppProviders.tsx` e `QueryProvider.tsx`.
+
+**O que não deve viver aqui:**  
+Providers específicos de uma única feature, componentes de tela ou chamadas HTTP.
+
+**Exemplo real:**  
+`QueryProvider.tsx` instancia um `QueryClient` com `queryConfig`.
+
+```tsx
+const [queryClient] = useState(
+	() =>
+		new QueryClient({
+			defaultOptions: queryConfig,
+		}),
+);
+```
+
+**Regra de uso:**  
+Todo provider global deve ser registrado em `AppProviders`, mantendo `main.tsx` limpo.
+
+### `src/types`
+
+**Responsabilidade:**  
+Guardar tipos globais compartilhados entre múltiplas camadas ou features.
+
+**O que vive aqui:**  
+Tipos de domínio usados de forma ampla, como `User`.
+
+**O que não deve viver aqui:**  
+Tipos que pertencem a uma única feature.
+
+**Exemplo real:**  
+`src/types/user.ts` define o usuário usado pela resposta de auth.
+
+```ts
+type Roles = 'ADMIN' | 'USER';
+
+export type User = {
+	id: string;
+	name: string;
+	email: string;
+	roles: Roles;
+};
+```
+
+**Regra de uso:**  
+Antes de criar um tipo global, confirme se ele realmente será compartilhado. Se for local de uma feature, mantenha dentro da feature.
+
+### `public`
+
+**Responsabilidade:**  
+Armazenar arquivos estáticos servidos diretamente pelo Vite.
+
+**O que vive aqui:**  
+Assets públicos que não precisam passar pelo pipeline de importação do React.
+
+**O que não deve viver aqui:**  
+Componentes, código TypeScript, regras de negócio ou assets que precisam ser importados e versionados junto ao bundle.
+
+**Exemplo real:**  
+A pasta existe no projeto como diretório público padrão do Vite.
+
+**Regra de uso:**  
+Use apenas para arquivos que devem ser acessados diretamente pela URL pública.
+
+## Explicação dos Arquivos Principais
+
+### `src/main.tsx`
+
+Ponto de entrada React. Importa `src/index.css`, renderiza `<App />` e usa `StrictMode`.
+
+### `src/app/index.tsx`
+
+Componente raiz da aplicação. Envolve `AppRouter` com `AppProviders`.
+
+### `src/app/Router.tsx`
+
+Define o roteador com `createBrowserRouter`. As rotas são carregadas de forma lazy:
+
+- `/` carrega `src/app/routes/Home.tsx`;
+- `/auth/register` carrega `src/app/routes/auth/Register.tsx`;
+- `*` carrega `src/app/routes/NotFound.tsx`.
+
+O arquivo também possui a função `convert`, que adapta exports opcionais chamados `clientLoader` e `clientAction` para `loader` e `action`, injetando o `QueryClient`. Hoje as rotas existentes exportam apenas o componente padrão, mas o padrão já está preparado para rotas que precisem conversar com o cache do TanStack Query.
+
+### `src/providers/AppProviders.tsx`
+
+Agrupa providers globais. Atualmente registra apenas `QueryProvider`.
+
+### `src/providers/QueryProvider.tsx`
+
+Cria uma instância de `QueryClient` e registra `QueryClientProvider`.
+
+### `src/lib/reactQuery.ts`
+
+Define a configuração padrão do TanStack Query:
+
+- `refetchOnWindowFocus: false`;
+- `retry: false`;
+- `staleTime: 1000 * 60`.
+
+Também exporta tipos auxiliares `ApiFnReturnType`, `QueryConfig` e `MutationConfig`.
+
+### `src/lib/axios.ts`
+
+Cria o client HTTP `api` com `axios.create`.
+
+Comportamentos atuais:
+
+- usa `import.meta.env.VITE_API_URL` como `baseURL`;
+- envia `Content-Type: application/json`;
+- adiciona `Authorization: Bearer <token>` quando existe token no `localStorage`;
+- em respostas `401`, remove o token e redireciona para `/auth/register`.
+
+### `src/config/paths.ts`
+
+Centraliza paths da aplicação e funções `getHref`. Deve ser a fonte principal para URLs internas.
+
+### `src/config/env.ts`
+
+Define uma validação de variáveis de ambiente com Zod. O arquivo procura variáveis iniciadas com `VITE_APP_` e espera uma chave `API_URL`.
+
+Observação importante: no estado atual do projeto, `src/lib/axios.ts` usa diretamente `import.meta.env.VITE_API_URL`, e `.env.example` também declara `VITE_API_URL=http://localhost:3000`. Portanto, `env.ts` existe como estrutura de validação, mas não é usado pelo client Axios atual.
+
+### `src/features/auth/components/RegisterForm.tsx`
+
+Implementa o formulário de registro. Ele combina:
+
+- `useForm` do React Hook Form;
+- `zodResolver(RegisterSchema)`;
+- `Controller` para conectar campos controlados;
+- componentes de UI (`Card`, `Field`, `Input`, `Button`);
+- `useMutation` do TanStack Query;
+- service `registerUser`.
+
+O estado de loading vem de `isPending`, erros são exibidos quando `isError` é verdadeiro e o submit chama `mutate(data)`.
+
+### `src/features/auth/schemas/register.schema.ts`
+
+Define o contrato de validação do formulário de registro. O schema valida:
+
+- `name` com mínimo de 2 caracteres e sem números/símbolos;
+- `email` válido;
+- `password` com mínimo de 8 caracteres, letra maiúscula, letra minúscula, número e símbolo.
+
+O tipo `RegisterFormData` é derivado do schema.
+
+### `src/features/auth/services/register.ts`
+
+Service responsável por registrar usuário na API. Faz `POST /auth/register`, salva `response.data.token` no `localStorage` e retorna `response.data`.
+
+### `src/features/auth/types/auth.types.ts`
+
+Define `RegisterResponse`, composto por `user: User` e `token: string`.
+
+### `src/types/user.ts`
+
+Define o tipo global `User` e os papéis possíveis `ADMIN` e `USER`.
+
+### `src/lib/utils.ts`
+
+Exporta `cn`, helper que combina `clsx` e `tailwind-merge` para montar classes Tailwind sem conflitos.
+
+### `src/index.css`
+
+Arquivo global de estilos. Importa TailwindCSS, animações, shadcn, fonte Inter e define tokens CSS de tema claro/escuro usando variáveis como `--background`, `--foreground`, `--primary`, `--border`, `--radius` e outras.
+
+### `vite.config.ts`
+
+Configura Vite com React, TailwindCSS e alias `@` apontando para `./src`.
+
+### `components.json`
+
+Configuração do shadcn/ui. Define uso de TSX, CSS em `src/index.css`, biblioteca de ícones `lucide`, aliases e estilo `radix-vega`.
+
+### `biome.json`
+
+Configuração de formatação e lint. O projeto usa tabs, largura de linha 120, aspas simples em JavaScript/JSX, ponto e vírgula e organização automática de imports.
+
+### `.env.example`
+
+Exemplo de variável de ambiente:
+
+```env
+VITE_API_URL=http://localhost:3000
+```
+
+### `index.html`
+
+HTML base do Vite. Contém `<div id="root"></div>` e carrega `/src/main.tsx`.
+
+## Fluxo de Dados da Aplicação
+
+O fluxo atual pode ser entendido assim:
+
+```txt
+main.tsx
+  -> App
+    -> AppProviders
+      -> QueryProvider
+        -> AppRouter
+          -> Route
+            -> Feature component
+              -> Schema / Types
+              -> Service
+                -> api (Axios)
+                  -> Backend
+              -> TanStack Query mutation/cache
+```
+
+Exemplo real no registro:
+
+1. O usuário acessa `/auth/register`.
+2. `AppRouter` carrega `src/app/routes/auth/Register.tsx`.
+3. A rota renderiza `RegisterForm`.
+4. `RegisterForm` usa `RegisterSchema` para validar os campos com Zod.
+5. Ao enviar o formulário, `useMutation` executa `registerUser`.
+6. `registerUser` chama `api.post('/auth/register', data)`.
+7. `api` usa a configuração global do Axios e interceptors.
+8. A resposta esperada segue `RegisterResponse`.
+9. O token retornado é salvo no `localStorage`.
+10. O componente reage a loading, sucesso e erro com estados da mutation.
+
+## Fluxo de Autenticação
+
+A autenticação existente no projeto ainda é inicial, mas já possui os seguintes comportamentos:
+
+- A rota pública de registro é `/auth/register`.
+- O formulário de registro envia dados para `POST /auth/register`.
+- A resposta esperada contém `user` e `token`.
+- O token é salvo no `localStorage` pelo service `registerUser`.
+- O interceptor de request em `src/lib/axios.ts` lê o token do `localStorage` e envia `Authorization: Bearer <token>`.
+- O interceptor de response remove o token em erro `401` e redireciona para `/auth/register`.
+
+Não há, no estado atual do projeto, implementação de:
+
+- rota protegida;
+- componente de guarda de rota;
+- busca do usuário logado;
+- refresh token;
+- logout dedicado;
+- provider de sessão/autenticação;
+- armazenamento em cookie.
+
+Se esses recursos forem adicionados, devem manter a separação atual: regras de auth em `src/features/auth`, configuração global de rotas em `src/app/Router.tsx` e client HTTP em `src/lib/axios.ts`.
+
+## Convenções do Projeto
+
+### Organização por feature
+
+Funcionalidades de negócio devem ficar em `src/features/[nome-da-feature]`.
+
+Exemplo atual:
+
+```txt
+src/features/auth/
+├── components/
+├── schemas/
+├── services/
+└── types/
+```
+
+### Rotas finas
+
+Arquivos de `src/app/routes` devem montar a página e delegar comportamento para features.
+
+### Services por domínio
+
+Chamadas HTTP específicas de uma feature devem ficar em `src/features/[feature]/services`.
+
+Exemplo: `src/features/auth/services/register.ts`.
+
+### Schemas separados dos tipos de API
+
+Schemas Zod validam entrada de dados, principalmente formulários. Tipos de resposta da API vivem em `types`.
+
+Exemplo:
+
+- `RegisterSchema` e `RegisterFormData` ficam em `schemas/register.schema.ts`;
+- `RegisterResponse` fica em `types/auth.types.ts`.
+
+### Alias de importação
+
+Use `@/` para importar a partir de `src`.
+
+Exemplo:
+
+```ts
+import { Button } from '@/components/ui/button';
+import { paths } from '@/config/paths';
+```
+
+### Componentes de UI
+
+Componentes em `src/components/ui` devem ser reutilizáveis e sem domínio. Eles podem usar `cn`, Tailwind, Radix UI e variantes com `cva`.
+
+### Formulários
+
+O padrão atual para formulários é:
+
+- React Hook Form para estado;
+- Zod para validação;
+- `@hookform/resolvers/zod` para integração;
+- componentes de UI para renderização;
+- service + mutation para envio.
+
+### TanStack Query
+
+Mutations e queries devem usar a configuração global do `QueryClient`. Para mutations, o exemplo atual usa `useMutation` diretamente no componente `RegisterForm`.
+
+### Estilo e formatação
+
+O projeto usa Biome com:
+
+- tabs;
+- aspas simples;
+- ponto e vírgula;
+- trailing commas;
+- line width 120;
+- organização de imports.
+
+## Como Criar uma Nova Feature
+
+1. Crie a pasta da feature:
+
+```txt
+src/features/minha-feature/
+```
+
+2. Adicione componentes específicos da feature:
+
+```txt
+src/features/minha-feature/components/
+```
+
+Use essa pasta para componentes que conhecem o domínio da feature.
+
+3. Adicione schemas quando houver validação:
+
+```txt
+src/features/minha-feature/schemas/
+```
+
+Siga o padrão de `register.schema.ts`: exporte o schema e derive o tipo com `z.infer`.
+
+4. Adicione tipos específicos da feature:
+
+```txt
+src/features/minha-feature/types/
+```
+
+Use para respostas de API, payloads e tipos que não são globais.
+
+5. Adicione services HTTP:
+
+```txt
+src/features/minha-feature/services/
+```
+
+Services devem usar `api` de `src/lib/axios.ts`.
+
+6. Crie a página de rota:
+
+```txt
+src/app/routes/MinhaFeature.tsx
+```
+
+Ou agrupe por domínio quando fizer sentido:
+
+```txt
+src/app/routes/minha-feature/MinhaPagina.tsx
+```
+
+7. Registre o path:
+
+```ts
+// src/config/paths.ts
+export const paths = {
+	// ...
+	minhaFeature: {
+		path: '/minha-feature',
+		getHref: () => '/minha-feature',
+	},
+} as const;
+```
+
+8. Registre a rota no router:
+
+```tsx
+// src/app/Router.tsx
+{
+	path: paths.minhaFeature.path,
+	lazy: () => import('./routes/MinhaFeature').then(convert(queryClient)),
+	HydrateFallback: () => null,
+}
+```
+
+9. Se precisar de dados assíncronos, use TanStack Query:
+
+- queries para leitura/cache;
+- mutations para criação, atualização e remoção;
+- services para comunicação HTTP.
+
+10. Se a feature começar a crescer, mantenha a separação:
+
+```txt
+components/  -> UI com domínio da feature
+schemas/     -> validação e tipos inferidos de entrada
+services/    -> chamadas HTTP
+types/       -> tipos específicos da feature
+```
+
+## Decisões Arquiteturais
+
+### Separar `app` de `features`
+
+`app` sabe como iniciar e rotear a aplicação. `features` sabe como executar regras de negócio. Essa separação evita que páginas virem arquivos grandes com formulário, validação, request e tratamento de erro misturados.
+
+### Centralizar HTTP em `src/lib/axios.ts`
+
+O client Axios único permite padronizar `baseURL`, headers, token e tratamento de erro `401`. Assim, services de feature não precisam repetir configuração técnica.
+
+### Usar TanStack Query como camada assíncrona
+
+TanStack Query padroniza loading, erro, cache, mutations e invalidações futuras. Mesmo que o exemplo atual use apenas mutation de registro, a base já possui `QueryClient` global.
+
+### Usar Zod junto com React Hook Form
+
+Zod mantém o contrato de validação explícito e permite derivar tipos TypeScript do próprio schema. Isso reduz divergência entre o que o formulário aceita e o que o TypeScript acredita que ele aceita.
+
+### Manter componentes globais sem domínio
+
+`src/components/ui` é uma base visual compartilhada. Ao impedir regras de negócio nessa pasta, os componentes ficam mais reutilizáveis e fáceis de manter.
+
+### Centralizar paths
+
+`src/config/paths.ts` evita strings de rota espalhadas pela aplicação e reduz erro em redirects, links e registro de rotas.
+
+## Boas Práticas
+
+- Mantenha rotas pequenas e delegue lógica para features.
+- Use `@/` nos imports internos.
+- Crie services tipados para chamadas HTTP.
+- Derive tipos de formulário a partir dos schemas Zod.
+- Use `src/types` apenas para tipos realmente globais.
+- Evite duplicar URLs; registre paths em `src/config/paths.ts`.
+- Use componentes de `src/components/ui` para manter consistência visual.
+- Centralize novos providers globais em `src/providers/AppProviders.tsx`.
+- Preserve o padrão de formatação definido no `biome.json`.
+- Mantenha interceptors e configuração de API em `src/lib/axios.ts`.
+- Prefira nomes explícitos, como `RegisterForm`, `RegisterSchema`, `RegisterFormData` e `registerUser`.
+
+## O que Evitar
+
+- Não colocar chamada HTTP diretamente em arquivos de rota.
+- Não colocar regra de negócio dentro de `src/components/ui`.
+- Não criar tipos globais para conceitos usados por apenas uma feature.
+- Não espalhar strings de rotas pela aplicação.
+- Não duplicar configuração de Axios dentro de services.
+- Não misturar schema de validação com componente visual.
+- Não usar `localStorage` diretamente em vários pontos sem necessidade; hoje o acesso ao token está concentrado no service de registro e no client Axios.
+- Não documentar ou usar pastas que ainda não existem como se fossem obrigatórias. Por exemplo, não existe `src/hooks` global no estado atual do projeto.
+- Não criar uma feature nova dentro de `src/app/routes`; a rota só deve apontar para a feature.
+- Não ignorar estados de loading e erro em mutations e queries.
+
+## Scripts Disponíveis
+
+```bash
+npm run dev
+npm run build
+npm run biome
+npm run preview
+```
+
+- `npm run dev`: inicia o servidor de desenvolvimento Vite.
+- `npm run build`: executa TypeScript em modo build e gera o build Vite.
+- `npm run biome`: formata `./src` com Biome.
+- `npm run preview`: serve localmente o build gerado.
+
+## Observações de Manutenção
+
+Este projeto deve ser mantido como referência oficial. Sempre que a arquitetura base evoluir, este README deve ser atualizado junto com o código.
+
+Pontos que merecem atenção em evoluções futuras:
+
+- alinhar `src/config/env.ts`, `.env.example` e `src/lib/axios.ts` em torno de um único padrão de variável de ambiente;
+- adicionar guards de rota quando existirem páginas protegidas;
+- criar fluxo explícito de logout quando necessário;
+- adicionar busca do usuário logado quando a aplicação precisar de sessão carregada no front-end;
+- avaliar criação de hooks específicos por feature quando a lógica de queries/mutations crescer.
+

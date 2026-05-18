@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { registerUser } from '../api/register';
 import { type RegisterFormData, RegisterSchema } from '../schemas/register.schema';
+import { registerUser } from '../services/register';
 
 export default function RegisterForm() {
 	const { handleSubmit, control } = useForm<RegisterFormData>({
